@@ -26,14 +26,66 @@ nameInput.placeholder = "Что нужно сделать?";
 nameInput.required = true;
 nameInput.maxLength = 150;
 
-const dateLabel = document.createElement("label");
-dateLabel.textContent = "Дата";
-dateLabel.htmlFor = "task-date";
+const colorField = document.createElement("div");
+colorField.className = "color-field";
 
-const dateInput = document.createElement("input");
-dateInput.id = "task-date";
-dateInput.type = "date";
-dateInput.required = true;
+const colorLabel = document.createElement("span");
+colorLabel.textContent = "Цвет задачи";
+colorLabel.id = "color-label";
+colorLabel.style.fontWeight = "600";
+
+const colorInput = document.createElement("select");
+colorInput.id = "task-color";
+colorInput.hidden = true;
+
+const colors = [
+    ["none", "Без выделения"],
+    ["sand", "Бежевый"],
+    ["green", "Зелёный"],
+    ["blue", "Голубой"],
+    ["purple", "Сиреневый"]
+];
+
+colors.forEach(function (color) {
+    const option = document.createElement("option");
+    option.value = color[0];
+    option.textContent = color[1];
+    colorInput.append(option);
+});
+
+const colorPalette = document.createElement("div");
+colorPalette.className = "color-palette";
+colorPalette.setAttribute("role", "radiogroup");
+colorPalette.setAttribute("aria-labelledby", "color-label");
+
+colors.forEach(function (color) {
+    const label = document.createElement("label");
+    label.className = "color-choice";
+    label.dataset.color = color[0];
+    label.title = color[1];
+
+    const radio = document.createElement("input");
+    radio.type = "radio";
+    radio.name = "task-color-choice";
+    radio.value = color[0];
+    radio.defaultChecked = color[0] === "none";
+    radio.checked = color[0] === "none";
+    radio.setAttribute("aria-label", color[1]);
+
+    const circle = document.createElement("span");
+    circle.className = "color-circle";
+    circle.setAttribute("aria-hidden", "true");
+    circle.textContent = color[0] === "none" ? "×" : "";
+
+    radio.addEventListener("change", function () {
+        colorInput.value = radio.value;
+    });
+
+    label.append(radio, circle);
+    colorPalette.append(label);
+});
+
+colorField.append(colorLabel, colorInput, colorPalette);
 
 function getToday() {
     const today = new Date();
@@ -44,7 +96,27 @@ function getToday() {
     return year + "-" + month + "-" + day;
 }
 
+function getTomorrow() {
+    const date = new Date();
+    date.setDate(date.getDate() + 1);
+
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+
+    return year + "-" + month + "-" + day;
+}
+
+const dateLabel = document.createElement("label");
+dateLabel.textContent = "Срок выполнения";
+dateLabel.htmlFor = "task-date";
+
+const dateInput = document.createElement("input");
+dateInput.id = "task-date";
+dateInput.type = "date";
+dateInput.required = true;
 dateInput.min = getToday();
+dateInput.value = getToday();
 
 dateInput.addEventListener("focus", function () {
     dateInput.min = getToday();
@@ -55,16 +127,73 @@ dateInput.addEventListener("input", function () {
     dateInput.setCustomValidity("");
 });
 
+const dateTools = document.createElement("div");
+dateTools.className = "date-tools";
+
+const todayButton = document.createElement("button");
+todayButton.type = "button";
+todayButton.textContent = "Сегодня";
+
+const tomorrowButton = document.createElement("button");
+tomorrowButton.type = "button";
+tomorrowButton.textContent = "Завтра";
+
+todayButton.addEventListener("click", function () {
+    dateInput.min = getToday();
+    dateInput.value = getToday();
+    dateInput.setCustomValidity("");
+});
+
+tomorrowButton.addEventListener("click", function () {
+    dateInput.min = getToday();
+    dateInput.value = getTomorrow();
+    dateInput.setCustomValidity("");
+});
+
+dateTools.append(todayButton, tomorrowButton);
+function updateDateButtons() {
+    const todaySelected = dateInput.value === getToday();
+    const tomorrowSelected = dateInput.value === getTomorrow();
+
+    todayButton.classList.toggle("selected", todaySelected);
+    tomorrowButton.classList.toggle("selected", tomorrowSelected);
+
+    todayButton.setAttribute("aria-pressed", todaySelected);
+    tomorrowButton.setAttribute("aria-pressed", tomorrowSelected);
+}
+
+todayButton.addEventListener("click", updateDateButtons);
+tomorrowButton.addEventListener("click", updateDateButtons);
+dateInput.addEventListener("input", updateDateButtons);
+dateInput.addEventListener("change", updateDateButtons);
+
+updateDateButtons();
+const dateRow = document.createElement("div");
+dateRow.className = "date-row";
+dateRow.append(dateInput, dateTools);
+
 const addButton = document.createElement("button");
 addButton.type = "submit";
 addButton.textContent = "Добавить задачу";
 
-const list = document.createElement("ul");
-list.className = "task-list";
+const cancelButton = document.createElement("button");
+cancelButton.type = "button";
+cancelButton.textContent = "Отмена";
+cancelButton.hidden = true;
 
-form.append(nameLabel, nameInput, dateLabel, dateInput, addButton);
-main.append(title, description, form, list);
-document.body.append(main);
+const formActions = document.createElement("div");
+formActions.className = "form-actions";
+formActions.append(cancelButton, addButton);
+
+form.append(
+    nameLabel,
+    nameInput,
+    colorField,
+    dateLabel,
+    dateRow,
+    formActions
+);
+
 const tools = document.createElement("div");
 tools.className = "task-tools";
 
@@ -74,54 +203,115 @@ search.placeholder = "Поиск по названию";
 search.setAttribute("aria-label", "Поиск задач");
 
 const filter = document.createElement("select");
+filter.hidden = true;
 filter.setAttribute("aria-label", "Статус задач");
 
-const options = [
-    ["all", "Все задачи"],
+const statuses = [
+    ["all", "Все"],
     ["active", "Активные"],
     ["done", "Выполненные"]
 ];
 
-options.forEach(function (option) {
+statuses.forEach(function (status) {
+    const option = document.createElement("option");
+    option.value = status[0];
+    option.textContent = status[1];
+    filter.append(option);
+});
+
+const statusTabs = document.createElement("div");
+statusTabs.className = "status-tabs";
+statusTabs.setAttribute("role", "group");
+statusTabs.setAttribute("aria-label", "Статус задач");
+
+statuses.forEach(function (status) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.textContent = status[1];
+    button.dataset.status = status[0];
+    button.setAttribute("aria-pressed", status[0] === "all");
+
+    button.addEventListener("click", function () {
+        filter.value = status[0];
+
+        statusTabs.querySelectorAll("button").forEach(function (item) {
+            item.setAttribute(
+                "aria-pressed",
+                item.dataset.status === filter.value
+            );
+        });
+
+        showTasks();
+    });
+
+    statusTabs.append(button);
+});
+
+const sort = document.createElement("select");
+sort.setAttribute("aria-label", "Порядок задач");
+
+const sortOptions = [
+    ["manual", "Без сортировки"],
+    ["early", "По дате ↑"],
+    ["late", "По дате ↓"]
+];
+
+sortOptions.forEach(function (option) {
     const item = document.createElement("option");
     item.value = option[0];
     item.textContent = option[1];
-    filter.append(item);
+    sort.append(item);
 });
 
-tools.append(search, filter);
-main.insertBefore(tools, list);
+const listControls = document.createElement("div");
+listControls.className = "list-controls";
+listControls.append(statusTabs, sort);
 
-search.addEventListener("input", function () {
-    showTasks();
-});
+tools.append(search, listControls, filter);
 
-filter.addEventListener("change", function () {
-    showTasks();
-});
+const counter = document.createElement("p");
+counter.className = "task-counter";
+counter.setAttribute("role", "status");
+
+const emptyMessage = document.createElement("p");
+emptyMessage.className = "empty-message";
+emptyMessage.hidden = true;
+
+const list = document.createElement("ul");
+list.className = "task-list";
+
+main.append(
+    title,
+    description,
+    form,
+    tools,
+    counter,
+    emptyMessage,
+    list
+);
+
+document.body.append(main);
+
+const notice = document.createElement("div");
+notice.className = "delete-notice";
+notice.hidden = true;
+
+const noticeText = document.createElement("span");
+noticeText.setAttribute("role", "status");
+
+const undoButton = document.createElement("button");
+undoButton.type = "button";
+undoButton.textContent = "Вернуть";
+
+notice.append(noticeText, undoButton);
+document.body.append(notice);
 
 let tasks = [];
-
 let editId = null;
 let dragId = null;
-
-const cancelButton = document.createElement("button");
-cancelButton.type = "button";
-cancelButton.textContent = "Отмена";
-cancelButton.hidden = true;
-form.append(cancelButton);
-
-function resetForm() {
-    editId = null;
-    form.reset();
-    nameInput.setCustomValidity("");
-    addButton.textContent = "Добавить задачу";
-    cancelButton.hidden = true;
-}
-
-cancelButton.addEventListener("click", function () {
-    resetForm();
-});
+let deletedTask = null;
+let deletedIndex = 0;
+let undoTimer = null;
 
 try {
     const data = JSON.parse(localStorage.getItem("lab2-tasks"));
@@ -141,8 +331,32 @@ function saveTasks() {
     }
 }
 
+function resetForm() {
+    editId = null;
+    form.reset();
+    colorInput.value = "none";
+    dateInput.min = getToday();
+    dateInput.value = getToday();
+    updateDateButtons();
+    dateInput.setCustomValidity("");
+    nameInput.setCustomValidity("");
+    addButton.textContent = "Добавить задачу";
+    cancelButton.hidden = true;
+}
+
 function showTasks() {
     list.replaceChildren();
+
+    const completed = tasks.filter(function (task) {
+        return task.done;
+    }).length;
+
+    const active = tasks.length - completed;
+
+    counter.textContent =
+        "Осталось: " + active + " · Выполнено: " + completed;
+
+    counter.hidden = tasks.length === 0;
 
     const text = search.value.trim().toLowerCase();
 
@@ -160,60 +374,108 @@ function showTasks() {
         return match;
     });
 
+    if (sort.value === "early") {
+        visible.sort(function (a, b) {
+            return a.date.localeCompare(b.date);
+        });
+    }
+
+    if (sort.value === "late") {
+        visible.sort(function (a, b) {
+            return b.date.localeCompare(a.date);
+        });
+    }
+
+    emptyMessage.hidden = visible.length > 0;
+
+    if (tasks.length === 0) {
+        emptyMessage.textContent =
+            "Пока нет задач. Добавь первое дело в форме выше.";
+    } else if (text !== "" && visible.length === 0) {
+        emptyMessage.textContent =
+            "Ничего не найдено. Попробуй изменить запрос или статус задач.";
+    } else if (filter.value === "active" && visible.length === 0) {
+        emptyMessage.textContent =
+            "Все задачи выполнены. Можно отдохнуть!";
+    } else if (filter.value === "done" && visible.length === 0) {
+        emptyMessage.textContent =
+            "Здесь появятся выполненные задачи.";
+    }
+
     visible.forEach(function (task) {
         const item = document.createElement("li");
         item.className = "task";
-        item.draggable = true;
-
-item.addEventListener("dragstart", function (event) {
-    dragId = task.id;
-    event.dataTransfer.setData("text/plain", task.id);
-    event.dataTransfer.effectAllowed = "move";
-    item.classList.add("dragging");
-});
-
-item.addEventListener("dragend", function () {
-    dragId = null;
-    item.classList.remove("dragging");
-});
-
-item.addEventListener("dragover", function (event) {
-    event.preventDefault();
-    event.dataTransfer.dropEffect = "move";
-});
-
-item.addEventListener("drop", function (event) {
-    event.preventDefault();
-
-    if (dragId === null || dragId === task.id) {
-        return;
-    }
-
-    const from = tasks.findIndex(function (task) {
-        return task.id === dragId;
-    });
-
-    if (from === -1) {
-        return;
-    }
-
-    const to = tasks.findIndex(function (other) {
-    return other.id === task.id;
-});
-
-const moved = tasks.splice(from, 1)[0];
-tasks.splice(to, 0, moved);
-    dragId = null;
-
-    saveTasks();
-    showTasks();
-});
+        item.dataset.color = task.color || "none";
+        item.draggable = sort.value === "manual";
         item.classList.toggle("done", task.done);
+
+        item.addEventListener("dragstart", function (event) {
+            if (sort.value !== "manual") {
+                event.preventDefault();
+                return;
+            }
+
+            dragId = task.id;
+            event.dataTransfer.setData("text/plain", task.id);
+            event.dataTransfer.effectAllowed = "move";
+            item.classList.add("dragging");
+        });
+
+        item.addEventListener("dragend", function () {
+            dragId = null;
+            item.classList.remove("dragging");
+        });
+
+        item.addEventListener("dragover", function (event) {
+            if (sort.value !== "manual" || dragId === null) {
+                return;
+            }
+
+            event.preventDefault();
+            event.dataTransfer.dropEffect = "move";
+        });
+
+        item.addEventListener("drop", function (event) {
+            event.preventDefault();
+
+            if (
+                sort.value !== "manual" ||
+                dragId === null ||
+                dragId === task.id
+            ) {
+                return;
+            }
+
+            const from = tasks.findIndex(function (other) {
+                return other.id === dragId;
+            });
+
+            const to = tasks.findIndex(function (other) {
+                return other.id === task.id;
+            });
+
+            if (from === -1 || to === -1) {
+                return;
+            }
+
+            const moved = tasks.splice(from, 1)[0];
+            tasks.splice(to, 0, moved);
+            dragId = null;
+
+            saveTasks();
+            showTasks();
+        });
 
         const checkbox = document.createElement("input");
         checkbox.type = "checkbox";
         checkbox.checked = task.done;
         checkbox.setAttribute("aria-label", "Выполнено: " + task.text);
+
+        checkbox.addEventListener("change", function () {
+            task.done = checkbox.checked;
+            saveTasks();
+            showTasks();
+        });
 
         const info = document.createElement("div");
         info.className = "task-info";
@@ -224,46 +486,81 @@ tasks.splice(to, 0, moved);
 
         const taskDate = document.createElement("time");
         taskDate.dateTime = task.date;
-        taskDate.textContent = task.date.split("-").reverse().join(".");
-        const editButton = document.createElement("button");
-editButton.type = "button";
-editButton.className = "edit-button";
-editButton.textContent = "Изменить";
 
-editButton.addEventListener("click", function () {
-    editId = task.id;
-    nameInput.value = task.text;
-    dateInput.value = task.date;
-    nameInput.setCustomValidity("");
-    addButton.textContent = "Сохранить изменения";
-    cancelButton.hidden = false;
-    nameInput.focus();
-});
+        if (task.date === getToday()) {
+            taskDate.textContent = "Сегодня";
+        } else if (task.date === getTomorrow()) {
+            taskDate.textContent = "Завтра";
+        } else {
+            const date = new Date(task.date + "T00:00:00");
+
+            taskDate.textContent = date.toLocaleDateString("ru-RU", {
+                day: "numeric",
+                month: "long",
+                year: "numeric"
+            });
+        }
+
+        if (!task.done && task.date < getToday()) {
+            taskDate.textContent =
+                "Просрочено · " + taskDate.textContent;
+            taskDate.className = "overdue";
+        }
+
+        const editButton = document.createElement("button");
+        editButton.type = "button";
+        editButton.className = "edit-button";
+        editButton.textContent = "Изменить";
+
+        editButton.addEventListener("click", function () {
+            editId = task.id;
+            nameInput.value = task.text;
+            dateInput.min = getToday();
+            dateInput.value = task.date;
+            updateDateButtons();
+            dateInput.setCustomValidity("");
+            colorInput.value = task.color || "none";
+
+            colorPalette.querySelectorAll("input").forEach(function (radio) {
+                radio.checked = radio.value === colorInput.value;
+            });
+
+            nameInput.setCustomValidity("");
+            addButton.textContent = "Сохранить изменения";
+            cancelButton.hidden = false;
+            nameInput.focus();
+        });
 
         const deleteButton = document.createElement("button");
         deleteButton.type = "button";
         deleteButton.className = "delete-button";
         deleteButton.textContent = "Удалить";
 
-        checkbox.addEventListener("change", function () {
-    task.done = checkbox.checked;
-    saveTasks();
-    showTasks();
-});
-
-
         deleteButton.addEventListener("click", function () {
-    tasks = tasks.filter(function (other) {
-        return other.id !== task.id;
-    });
+            clearTimeout(undoTimer);
 
-    if (editId === task.id) {
-        resetForm();
-    }
+            deletedIndex = tasks.findIndex(function (other) {
+                return other.id === task.id;
+            });
 
-    saveTasks();
-    showTasks();
-});
+            deletedTask = task;
+            tasks.splice(deletedIndex, 1);
+
+            if (editId === task.id) {
+                resetForm();
+            }
+
+            saveTasks();
+            showTasks();
+
+            notice.hidden = false;
+            noticeText.textContent = "Задача удалена";
+
+            undoTimer = setTimeout(function () {
+                deletedTask = null;
+                notice.hidden = true;
+            }, 7000);
+        });
 
         info.append(taskName, taskDate);
         item.append(checkbox, info, editButton, deleteButton);
@@ -271,13 +568,46 @@ editButton.addEventListener("click", function () {
     });
 }
 
+undoButton.addEventListener("click", function () {
+    if (deletedTask === null) {
+        return;
+    }
+
+    clearTimeout(undoTimer);
+    tasks.splice(deletedIndex, 0, deletedTask);
+    deletedTask = null;
+    notice.hidden = true;
+
+    saveTasks();
+    showTasks();
+});
+
+cancelButton.addEventListener("click", function () {
+    resetForm();
+});
+
+search.addEventListener("input", function () {
+    showTasks();
+});
+
+sort.addEventListener("change", function () {
+    showTasks();
+});
+
+nameInput.addEventListener("input", function () {
+    nameInput.setCustomValidity("");
+});
+
 form.addEventListener("submit", function (event) {
     event.preventDefault();
 
-        dateInput.setCustomValidity("");
+    dateInput.min = getToday();
+    dateInput.setCustomValidity("");
 
-    if (dateInput.value < getToday()) {
-        dateInput.setCustomValidity("Выберите сегодняшнюю или будущую дату");
+    if (!dateInput.value || dateInput.value < getToday()) {
+        dateInput.setCustomValidity(
+            "Выберите сегодняшнюю или будущую дату"
+        );
         dateInput.reportValidity();
         return;
     }
@@ -290,23 +620,25 @@ form.addEventListener("submit", function (event) {
         return;
     }
 
-        if (editId === null) {
+    if (editId === null) {
         const task = {
             id: crypto.randomUUID(),
             text: text,
             date: dateInput.value,
-            done: false
+            done: false,
+            color: colorInput.value
         };
 
         tasks.push(task);
     } else {
-        const task = tasks.find(function (task) {
-            return task.id === editId;
+        const task = tasks.find(function (other) {
+            return other.id === editId;
         });
 
         if (task) {
             task.text = text;
             task.date = dateInput.value;
+            task.color = colorInput.value;
         }
     }
 
@@ -314,9 +646,6 @@ form.addEventListener("submit", function (event) {
     showTasks();
     resetForm();
     nameInput.focus();
-});
-nameInput.addEventListener("input", function () {
-    nameInput.setCustomValidity("");
 });
 
 showTasks();
