@@ -1,6 +1,6 @@
 const style = document.createElement("link");
 style.rel = "stylesheet";
-style.href = "style.css";
+style.href = "style.css?v=4";
 document.head.append(style);
 
 const main = document.createElement("main");
@@ -170,7 +170,11 @@ dateInput.addEventListener("change", updateDateButtons);
 updateDateButtons();
 const dateRow = document.createElement("div");
 dateRow.className = "date-row";
-dateRow.append(dateInput, dateTools);
+const dateBox = document.createElement("div");
+dateBox.className = "date-box";
+dateBox.append(dateInput);
+
+dateRow.append(dateBox, dateTools);
 
 const addButton = document.createElement("button");
 addButton.type = "submit";
@@ -407,6 +411,104 @@ function showTasks() {
         item.className = "task";
         item.dataset.color = task.color || "none";
         item.draggable = sort.value === "manual";
+        item.dataset.id = task.id;
+
+const moveButton = document.createElement("button");
+moveButton.type = "button";
+moveButton.className = "task-move";
+moveButton.textContent = "↕";
+moveButton.hidden = sort.value !== "manual";
+moveButton.setAttribute(
+    "aria-label",
+    "Перетащить задачу: " + task.text
+);
+
+let touchPointer = null;
+let touchTarget = null;
+
+function clearTouch() {
+    document.querySelectorAll(".touch-target").forEach(function (card) {
+        card.classList.remove("touch-target");
+    });
+
+    item.classList.remove("dragging");
+    touchPointer = null;
+    touchTarget = null;
+}
+
+moveButton.addEventListener("pointerdown", function (event) {
+    if (!event.isPrimary || event.button !== 0) {
+        return;
+    }
+
+    event.preventDefault();
+    touchPointer = event.pointerId;
+    touchTarget = null;
+    moveButton.setPointerCapture(event.pointerId);
+    item.classList.add("dragging");
+});
+
+moveButton.addEventListener("pointermove", function (event) {
+    if (event.pointerId !== touchPointer) {
+        return;
+    }
+
+    const element = document.elementFromPoint(
+        event.clientX,
+        event.clientY
+    );
+
+    const card = element ? element.closest(".task") : null;
+
+    document.querySelectorAll(".touch-target").forEach(function (other) {
+        other.classList.remove("touch-target");
+    });
+
+    touchTarget = null;
+
+    if (card && card.parentElement === list && card !== item) {
+        touchTarget = card.dataset.id;
+        card.classList.add("touch-target");
+    }
+});
+
+moveButton.addEventListener("pointerup", function (event) {
+    if (event.pointerId !== touchPointer) {
+        return;
+    }
+
+    const targetId = touchTarget;
+    clearTouch();
+
+    if (targetId === null || sort.value !== "manual") {
+        return;
+    }
+
+    const from = tasks.findIndex(function (other) {
+        return other.id === task.id;
+    });
+
+    const to = tasks.findIndex(function (other) {
+        return other.id === targetId;
+    });
+
+    if (from === -1 || to === -1) {
+        return;
+    }
+
+    const moved = tasks.splice(from, 1)[0];
+    tasks.splice(to, 0, moved);
+
+    saveTasks();
+    showTasks();
+});
+
+moveButton.addEventListener("pointercancel", clearTouch);
+moveButton.addEventListener("lostpointercapture", clearTouch);
+
+moveButton.addEventListener("dragstart", function (event) {
+    event.preventDefault();
+});
         item.classList.toggle("done", task.done);
 
         item.addEventListener("dragstart", function (event) {
@@ -563,7 +665,11 @@ function showTasks() {
         });
 
         info.append(taskName, taskDate);
-        item.append(checkbox, info, editButton, deleteButton);
+        const actions = document.createElement("div");
+actions.className = "task-actions";
+actions.append(editButton, deleteButton);
+
+item.append(checkbox, info, moveButton, actions);
         list.append(item);
     });
 }
