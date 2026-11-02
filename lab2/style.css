@@ -6,31 +6,38 @@ body {
     margin: 0;
     padding: 40px 20px;
     font-family: Arial, sans-serif;
-    color: #303044;
-    background: #f3f1f8;
+    color: #402525;
+    background: #e9e5df;
 }
 
 .app {
     max-width: 800px;
     margin: 0 auto;
     padding: 32px;
-    background: white;
+    background: #fffdf8;
+    border: 1px solid #d8cec2;
     border-radius: 20px;
+    box-shadow: 0 12px 35px rgba(65, 35, 25, 0.08);
 }
 
 h1 {
     margin: 0 0 12px;
+    color: #4d1010;
 }
 
 p {
     margin: 0 0 28px;
-    color: #686878;
+    color: #71645a;
 }
 
 .task-form {
     display: flex;
     flex-direction: column;
     gap: 12px;
+}
+
+label {
+    font-weight: 600;
 }
 
 input,
@@ -42,24 +49,31 @@ button {
 
 input {
     min-width: 0;
-    border: 1px solid #d8d4e4;
+    color: #402525;
+    background: #fffefa;
+    border: 1px solid #cfc1b2;
+}
+
+input::placeholder {
+    color: #3b020294;
 }
 
 button {
     margin-top: 8px;
     border: none;
-    color: white;
-    background: #7460a8;
+    color: #ffffff;
+    background: #591515;
     cursor: pointer;
+    transition: background 0.2s;
 }
 
 button:hover {
-    background: #604d91;
+    background: #530505;
 }
 
 input:focus-visible,
 button:focus-visible {
-    outline: 3px solid #b8a8df;
+    outline: 3px solid #a34308bd;
     outline-offset: 3px;
 }
 
@@ -69,6 +83,65 @@ button:focus-visible {
     list-style: none;
 }
 
+.task {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px;
+    margin-bottom: 12px;
+    background: #fffefa;
+    border: 1px solid #d0c2b3;
+    border-radius: 12px;
+}
+
+.task input[type="checkbox"] {
+    flex-shrink: 0;
+    width: 22px;
+    height: 22px;
+    margin: 0;
+    accent-color: #4b1010;
+    cursor: pointer;
+}
+
+.task-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.task-name {
+    overflow-wrap: anywhere;
+}
+
+.task time {
+    font-size: 14px;
+    color: #591515;
+}
+
+.task.done {
+    background: #eee8df;
+}
+
+.task.done .task-name {
+    text-decoration: line-through;
+    color: #75695d;
+}
+
+.delete-button {
+    flex-shrink: 0;
+    margin: 0;
+    padding: 10px 12px;
+    color: #591515;
+    background: #e9dfd2;
+}
+
+.delete-button:hover {
+    color: #ffffff;
+    background: #591515;
+}
+
 @media (max-width: 600px) {
     body {
         padding: 20px 12px;
@@ -76,5 +149,15 @@ button:focus-visible {
 
     .app {
         padding: 20px;
+    }
+}
+
+@media (max-width: 420px) {
+    .task {
+        flex-wrap: wrap;
+    }
+
+    .delete-button {
+        margin-left: auto;
     }
 }
